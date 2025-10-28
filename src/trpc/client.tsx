@@ -9,6 +9,14 @@ import { makeQueryClient } from './query-client';
 import type { AppRouter } from './routers/_app';
 export const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
 let browserQueryClient: QueryClient;
+/**
+ * Get a QueryClient appropriate for the current runtime environment.
+ *
+ * On the server this returns a new QueryClient instance for each call.
+ * In the browser this returns a single shared QueryClient instance (created once and reused).
+ *
+ * @returns A QueryClient instance: a fresh client on the server; a singleton client in the browser.
+ */
 function getQueryClient() {
   if (typeof window === 'undefined') {
     // Server: always make a new query client
@@ -21,6 +29,11 @@ function getQueryClient() {
   if (!browserQueryClient) browserQueryClient = makeQueryClient();
   return browserQueryClient;
 }
+/**
+ * Resolve the full TRPC HTTP endpoint URL appropriate for the current runtime.
+ *
+ * @returns The TRPC API URL: in the browser a relative "/api/trpc"; on the server "https://{VERCEL_URL}/api/trpc" when `VERCEL_URL` is set, otherwise "http://localhost:3000/api/trpc".
+ */
 function getUrl() {
   const base = (() => {
     if (typeof window !== 'undefined') return '';
@@ -29,6 +42,15 @@ function getUrl() {
   })();
   return `${base}/api/trpc`;
 }
+/**
+ * Provides TRPC and TanStack Query context to descendant components.
+ *
+ * Creates a TRPC client once for the provider lifetime, obtains an appropriate QueryClient for the environment, and wraps `children` with QueryClientProvider and the TRPC context provider.
+ *
+ * @param props - Component props.
+ * @param props.children - React nodes to receive the TRPC and QueryClient contexts.
+ * @returns A React element that supplies TRPC and React Query context to its descendants.
+ */
 export function TRPCReactProvider(
   props: Readonly<{
     children: React.ReactNode;
